@@ -1,4 +1,3 @@
-import { ModelDataType } from "@/types";
 import React, { useEffect, useRef, useState } from "react";
 import { Open_Sans, Raleway } from "@next/font/google";
 import BlurFade from "../ui/blur-fade";
@@ -8,6 +7,7 @@ import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 import { useModels } from "@/context/ModelsContext";
 import { useUser } from "@/context/context";
+import GenerateImageFunction from "./GenerateImageFunction";
 
 const openSans = Open_Sans({
 	subsets: ["latin"],
@@ -115,55 +115,121 @@ const GenerateImage = async (props: any) => {
 
 	setError(null);
 
-	const response = await fetch("/api/generate/generate_image", {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({
-			prompt: prompt,
-			model_id: model_data.id,
-			username: username,
-		}),
+	const response = await GenerateImageFunction({
+		prompt,
+		model_id: model_data.id,
+		username,
 	});
 
-	// const { res, url, err } = await model_data
-	// 	.query(prompt)
-	// 	.then(async (response: Blob) => {
-	// 		const url = URL.createObjectURL(response);
+	if (response.status === 200) {
+		const { res, url, err } = response;
 
-	// 		return { res: response, url, err: null };
-	// 	})
-	// 	.catch((err: any) => {
-	// 		return { res: null, url: "", err: err };
+		if (err) {
+			console.error(err);
+			setError(err);
+			setIsGenerating(false);
+			return;
+		}
+
+		if (url === "") {
+			setError("Failed to generate image.");
+			return;
+		}
+
+		console.log(res);
+
+		setIsGenerating(false);
+
+		setGeneratedImages([...generated_images, url]);
+		setAllPrompts([...all_prompts, prompt]);
+	} else {
+		setError("Failed to generate image.");
+		setIsGenerating(false);
+	}
+
+	// const response = await fetch("/api/generate/generate_image", {
+	// 	method: "POST",
+	// 	headers: { "Content-Type": "application/json" },
+	// 	body: JSON.stringify({
+	// 		prompt: prompt,
+	// 		model_id: model_data.id,
+	// 		username: username,
+	// 	}),
+	// });
+
+	// if (!response.ok) {
+	// 	setError("Failed to generate image.");
+	// 	setIsGenerating(false);
+	// 	return;
+	// }
+
+	// const { res, url, err } = await response.json();
+	// if (err) {
+	// 	console.error(err);
+	// 	setError(err);
+	// 	setIsGenerating(false);
+	// 	return;
+	// }
+
+	// if (url === "") {
+	// 	setError("Failed to generate image.");
+	// 	return;
+	// }
+
+	// console.log(res);
+
+	// setIsGenerating(false);
+
+	// setGeneratedImages([...generated_images, url]);
+	// setAllPrompts([...all_prompts, prompt]);
+
+	// const json = await response.json();
+	// const { job_id } = json;
+
+	// const interval_id = setInterval(async () => {
+	// 	const resp = await fetch("/api/generate/status", {
+	// 		method: "POST",
+	// 		headers: { "Content-Type": "application/json" },
+	// 		body: JSON.stringify({
+	// 			job_id: job_id,
+	// 			username: username,
+	// 			model_id: model_data.id,
+	// 		}),
 	// 	});
 
-	if (!response.ok) {
-		setError("Failed to generate image.");
-		setIsGenerating(false);
-		return;
-	}
+	// 	if (!resp.ok) {
+	// 		setError("Failed to check job status.");
+	// 		setIsGenerating(false);
+	// 		clearInterval(interval_id);
+	// 		return;
+	// 	}
 
-	const json = await response.json();
+	// 	const status_resp = await resp.json();
+	// 	const { isCompleted } = status_resp;
+	// 	if (isCompleted) {
+	// 		const { res, url, err } = status_resp.job;
+	// 		if (err) {
+	// 			console.error(err);
+	// 			setError(err);
+	// 			setIsGenerating(false);
+	// 			return;
+	// 		}
 
-	const { res, url, err } = json;
+	// 		if (url === "") {
+	// 			setError("Failed to generate image.");
+	// 			return;
+	// 		}
 
-	if (err) {
-		console.error(err);
-		setError(err);
-		setIsGenerating(false);
-		return;
-	}
+	// 		console.log(res);
 
-	if (url === "") {
-		setError("Failed to generate image.");
-		return;
-	}
+	// 		setIsGenerating(false);
 
-	console.log(res);
+	// 		setGeneratedImages([...generated_images, url]);
+	// 		setAllPrompts([...all_prompts, prompt]);
 
-	setIsGenerating(false);
-
-	setGeneratedImages([...generated_images, url]);
-	setAllPrompts([...all_prompts, prompt]);
+	// 		clearInterval(interval_id);
+	// 	}
+	// }, 5000);
 };
 
 function ModelDetailsSection() {

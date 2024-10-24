@@ -2,7 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['picsum.photos', "nbjvaaairgzidrkiwmfc.supabase.co"], // Add external image domains here
+    remotePatterns: [{
+      hostname: "picsum.photos"
+    }, {
+      hostname: "nbjvaaairgzidrkiwmfc.supabase.co"
+    }], // Add external image domains here
   },
   compiler: {
     styledComponents: false,

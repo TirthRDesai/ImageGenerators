@@ -19,6 +19,7 @@ function Model() {
 						<BlurFade
 							delay={0.1 * ((index % AllModels.length) + 1)}
 							inView
+							key={model.id}
 							duration={0.8}
 						>
 							<ModelCard

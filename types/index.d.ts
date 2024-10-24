@@ -21,7 +21,7 @@ export interface GeneratedImageRecords {
 	download_url?: Url = "";
 }
 
-type IssuerType = "huggingface" | "replicate" | "deepai" | "openai";
+type IssuerType = "huggingface" | "replicate" | "deepai" | "openai" | "civitai";
 
 export interface ModelDataType {
 	id: number;
@@ -34,5 +34,7 @@ export interface ModelDataType {
 	issuer: IssuerType;
 	trigger_words: string[];
 	nsfw?: boolean = false;
+	needs_loading?: boolean = false;
+	load?: () => Promise<any>;
 	query: (input: string, ...kwargs: any[]) => Promise<any>;
 }
