@@ -22,12 +22,21 @@ export default async function handler(
 		return res.status(405).json({ message: "Method not allowed" });
 	}
 
+	console.log(
+		"FetchRecords API called with:",
+		req.method,
+		req.body,
+		req.query
+	);
+
 	const from =
 		typeof req.query.from === "string"
 			? Number(req.query.from)
 			: req.body?.from ?? 0;
 	const to =
-		typeof req.query.to === "string" ? Number(req.query.to) : req.body?.to ?? 10;
+		typeof req.query.to === "string"
+			? Number(req.query.to)
+			: req.body?.to ?? 10;
 
 	try {
 		const baseUrl = getBackendBaseUrl();

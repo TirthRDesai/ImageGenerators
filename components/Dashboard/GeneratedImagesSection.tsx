@@ -26,6 +26,7 @@ const fetchItems = async ({ pageParam = 0 }) => {
 };
 
 function GeneratedImagesSection() {
+	const loadMoreRef = useRef<HTMLDivElement | null>(null);
 	const {
 		data,
 		fetchNextPage,
@@ -38,14 +39,42 @@ function GeneratedImagesSection() {
 		queryKey: ["generatedImages"],
 		queryFn: fetchItems,
 		getNextPageParam: (lastPage, allPages) => {
-			return lastPage.length === ITEMS_PER_PAGE
-				? allPages.length
-				: undefined;
+			console.log(
+				`[getNextPageParam] lastPage.length=${lastPage.length}, allPages.length=${allPages.length}`
+			);
+			// If backend returns empty, stop. Otherwise, allow next page.
+			return lastPage.length > 0 ? allPages.length : undefined;
 		},
 		initialPageParam: 0,
 	});
 
 	const items = data?.pages?.flat() || [];
+
+	useEffect(() => {
+		const target = loadMoreRef.current;
+		if (!target) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				const [entry] = entries;
+				console.log(
+					`[IntersectionObserver] isIntersecting=${entry.isIntersecting}, isFetchingNextPage=${isFetchingNextPage}, hasNextPage=${hasNextPage}`
+				);
+				if (
+					entry.isIntersecting &&
+					!isFetchingNextPage &&
+					hasNextPage
+				) {
+					console.log("[IntersectionObserver] Calling fetchNextPage");
+					fetchNextPage();
+				}
+			},
+			{ rootMargin: "400px" }
+		);
+
+		observer.observe(target);
+		return () => observer.disconnect();
+	}, [fetchNextPage, isFetchingNextPage, hasNextPage]);
 
 	if (isLoading) return <div>Loading...</div>;
 	if (isError) return <div>Error: {error.message}</div>;
@@ -80,6 +109,7 @@ function GeneratedImagesSection() {
 			</div>
 
 			<div
+				ref={loadMoreRef}
 				style={{
 					height: "20px",
 					paddingTop: "20px",
