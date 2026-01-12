@@ -18,11 +18,16 @@ export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse<Response>
 ) {
-	if (req.method !== "POST") {
+	if (req.method !== "POST" && req.method !== "GET") {
 		return res.status(405).json({ message: "Method not allowed" });
 	}
 
-	const { from = 0, to = 10 } = req.body ?? {};
+	const from =
+		typeof req.query.from === "string"
+			? Number(req.query.from)
+			: req.body?.from ?? 0;
+	const to =
+		typeof req.query.to === "string" ? Number(req.query.to) : req.body?.to ?? 10;
 
 	try {
 		const baseUrl = getBackendBaseUrl();

@@ -5,8 +5,17 @@ export default async function handler(
 	res: NextApiResponse
 ) {
 	// GET TOKEN
+	const tokenFromQuery = req.query.token;
+	const tokenFromBody = req.body?.token;
+	const token =
+		typeof tokenFromQuery === "string" ? tokenFromQuery : tokenFromBody;
 
-	const { token } = req.query;
+	if (req.method !== "GET" && req.method !== "POST") {
+		return res
+			.status(405)
+			.json({ message: "Method not allowed", status: false });
+	}
+
 	if (!token || typeof token !== "string") {
 		return res
 			.status(400)
@@ -17,7 +26,7 @@ export default async function handler(
 
 	const url =
 		"https://imgenerator.td-server.com/generate/get_status/" + token;
-	const response = await fetch(url);
+	const response = await fetch(url, { method: "GET" });
 	if (!response.ok) {
 		return res
 			.status(500)

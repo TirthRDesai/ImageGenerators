@@ -1,8 +1,3 @@
-import Jobs, { JobType } from "@/models/Jobs";
-import { ModelData } from "@/models/ModelData";
-import { ModelDataType } from "@/types";
-import { supabase } from "@/utils/supabase";
-import { decode } from "base64-arraybuffer";
 import { NextApiRequest, NextApiResponse } from "next";
 import { nanoid } from "nanoid";
 
@@ -10,6 +5,12 @@ export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
+	if (req.method !== "POST") {
+		return res
+			.status(405)
+			.json({ message: "Method not allowed", status: false });
+	}
+
 	const { model_id, prompt, username } = req.body;
 	const user_token = nanoid(16);
 	const response = await fetch(
