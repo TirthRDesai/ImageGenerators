@@ -1,5 +1,4 @@
 import { GeneratedImageRecords } from "@/types";
-import { supabase } from "@/utils/supabase";
 import { NextApiRequest, NextApiResponse } from "next";
 
 type Response = {
@@ -7,55 +6,52 @@ type Response = {
 	data?: GeneratedImageRecords[];
 };
 
+const getBackendBaseUrl = () => {
+	return (
+		process.env.NEXT_PUBLIC_BACKEND_URL ||
+		process.env.BACKEND_URL ||
+		"https://imgenerator.td-server.com"
+	);
+};
+
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse<Response>
 ) {
-	const { from, to } = req.body;
+	if (req.method !== "POST") {
+		return res.status(405).json({ message: "Method not allowed" });
+	}
+
+	const { from = 0, to = 10 } = req.body ?? {};
 
 	try {
-		let imageRecords = await FetchImageRecords(from, to);
+		const baseUrl = getBackendBaseUrl();
+		const url = new URL("/generate/fetch_generated_images/", baseUrl);
+		url.searchParams.set("ffrom", String(from));
+		url.searchParams.set("to", String(to));
 
-		for (let i = 0; i < imageRecords.length; i = i + 1) {
-			const record = imageRecords[i];
+		const response = await fetch(url.toString(), {
+			method: "POST",
+		});
 
-			const url_response = await supabase.storage
-				.from("generated-images")
-				.createSignedUrl(
-					"generated_" + record.image_name + ".jpg",
-					60 * 60 * 24,
-					{
-						download: false,
-					}
-				);
-
-			if (url_response.error) {
-				console.error(url_response.error);
-				continue;
-			}
-
-			imageRecords[i].url = url_response.data.signedUrl;
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error("Backend error:", response.status, errorText);
+			return res
+				.status(500)
+				.json({ message: "Error fetching image records" });
 		}
 
+		const payload = await response.json();
+
 		return res.status(200).json({
-			message: "Image records fetched successfully",
-			data: imageRecords,
+			message: payload?.message || "Image records fetched successfully",
+			data: payload?.data || [],
 		});
 	} catch (error) {
 		console.error(error);
-		res.status(500).json({ message: "Error fetching image records" });
+		return res
+			.status(500)
+			.json({ message: "Error fetching image records" });
 	}
 }
-
-const FetchImageRecords = async (from: number, to: number) => {
-	const { data, error } = await supabase
-		.from("generated image records")
-		.select("*")
-		.range(from, to)
-		.order("created_at", { ascending: false });
-
-	if (error) {
-		throw new Error(error.message);
-	}
-	return data;
-};

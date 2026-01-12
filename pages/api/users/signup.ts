@@ -15,26 +15,19 @@ export default async function handler(
 
 	const { username, password, name, email } = body;
 
-	const response = await supabase
-		.from("users")
-		.insert({
-			username,
-			name,
-			email,
-			password: CryptoJS.AES.encrypt(
-				password,
-				process.env.ENCRYPTION_KEY || ""
-			).toString(),
-		})
-		.select();
-
-	if (response.error) {
-		res.status(400).json({ error: response.error.message });
-		return;
-	}
-
-	res.status(200).json({
-		message: "User created successfully",
-		data: response.data[0],
-	});
+	const response = await fetch(
+		"https://imgenerator.td-server.com/auth/signup",
+		{
+			method: "POST",
+			body: JSON.stringify({ username, password, name, email }),
+			headers: {
+				"Content-Type": "application/json",
+			},
+		}
+	);
+	const data = await response.json();
+	console.log(data);
+	return res
+		.status(200)
+		.json({ message: "User created successfully", data: data.user });
 }

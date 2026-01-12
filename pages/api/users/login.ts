@@ -14,39 +14,25 @@ export default async function handler(
 
 	const { username, password, is_encrypted } = body;
 
-	const response = await supabase
-		.from("users")
-		.select("*")
-		.eq("username", username);
+	const response = await fetch(
+		"https://imgenerator.td-server.com/auth/login",
+		{
+			method: "POST",
+			body: JSON.stringify({ username, password, is_encrypted }),
+			headers: {
+				"Content-Type": "application/json",
+			},
+		}
+	);
 
-	if (response.error) {
-		return res.status(400).json({ error: response.error.message });
-	}
-
-	let decryptedPassword = "";
-	if (response.data && response.data.length > 0) {
-		decryptedPassword = CryptoJS.AES.decrypt(
-			response.data[0].password,
-			process.env.ENCRYPTION_KEY || ""
-		).toString(CryptoJS.enc.Utf8);
-	}
-
-	let decryptedPassword2 = password;
-	if (is_encrypted == true) {
-		decryptedPassword2 = CryptoJS.AES.decrypt(
-			response.data[0].password,
-			process.env.ENCRYPTION_KEY || ""
-		).toString(CryptoJS.enc.Utf8);
-	}
-
-	if (decryptedPassword === decryptedPassword2) {
+	if (response.status != 200) {
 		return res
-			.status(200)
-			.json({ message: "Login successful", data: response.data[0] });
-	} else {
-		console.log(
-			"Wrong Password: " + decryptedPassword + " " + decryptedPassword2
-		);
-		return res.status(401).json({ message: "Invalid credentials" });
+			.status(response.status)
+			.json({ message: "Invalid credentials" });
 	}
+	const data = await response.json();
+	console.log(data);
+	return res
+		.status(200)
+		.json({ message: "Login successful", data: data.user });
 }

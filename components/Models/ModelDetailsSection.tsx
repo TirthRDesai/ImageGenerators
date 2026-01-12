@@ -8,6 +8,7 @@ import { Button } from "../ui/button";
 import { useModels } from "@/context/ModelsContext";
 import { useUser } from "@/context/context";
 import GenerateImageFunction from "./GenerateImageFunction";
+import useSWR from "swr";
 
 const openSans = Open_Sans({
 	subsets: ["latin"],
@@ -83,155 +84,6 @@ const GenerateButton: React.FC<{
 	);
 };
 
-const GenerateImage = async (props: any) => {
-	const {
-		model_data,
-		setModelData,
-		prompt,
-		setPrompt,
-		setIsGenerating,
-		isGenerating,
-		error,
-		setError,
-		generated_images,
-		setGeneratedImages,
-		all_prompts,
-		setAllPrompts,
-	} = props;
-
-	const username = localStorage.getItem("username");
-
-	if (!model_data || !username) {
-		return;
-	}
-
-	setIsGenerating(true);
-
-	if (prompt.trim() === "") {
-		setError("Please enter a prompt.");
-		setIsGenerating(false);
-		return;
-	}
-
-	setError(null);
-
-	const response = await GenerateImageFunction({
-		prompt,
-		model_id: model_data.id,
-		username,
-	});
-
-	if (response.status === 200) {
-		const { res, url, err } = response;
-
-		if (err) {
-			console.error(err);
-			setError(err);
-			setIsGenerating(false);
-			return;
-		}
-
-		if (url === "") {
-			setError("Failed to generate image.");
-			return;
-		}
-
-		console.log(res);
-
-		setIsGenerating(false);
-
-		setGeneratedImages([...generated_images, url]);
-		setAllPrompts([...all_prompts, prompt]);
-	} else {
-		setError("Failed to generate image.");
-		setIsGenerating(false);
-	}
-
-	// const response = await fetch("/api/generate/generate_image", {
-	// 	method: "POST",
-	// 	headers: { "Content-Type": "application/json" },
-	// 	body: JSON.stringify({
-	// 		prompt: prompt,
-	// 		model_id: model_data.id,
-	// 		username: username,
-	// 	}),
-	// });
-
-	// if (!response.ok) {
-	// 	setError("Failed to generate image.");
-	// 	setIsGenerating(false);
-	// 	return;
-	// }
-
-	// const { res, url, err } = await response.json();
-	// if (err) {
-	// 	console.error(err);
-	// 	setError(err);
-	// 	setIsGenerating(false);
-	// 	return;
-	// }
-
-	// if (url === "") {
-	// 	setError("Failed to generate image.");
-	// 	return;
-	// }
-
-	// console.log(res);
-
-	// setIsGenerating(false);
-
-	// setGeneratedImages([...generated_images, url]);
-	// setAllPrompts([...all_prompts, prompt]);
-
-	// const json = await response.json();
-	// const { job_id } = json;
-
-	// const interval_id = setInterval(async () => {
-	// 	const resp = await fetch("/api/generate/status", {
-	// 		method: "POST",
-	// 		headers: { "Content-Type": "application/json" },
-	// 		body: JSON.stringify({
-	// 			job_id: job_id,
-	// 			username: username,
-	// 			model_id: model_data.id,
-	// 		}),
-	// 	});
-
-	// 	if (!resp.ok) {
-	// 		setError("Failed to check job status.");
-	// 		setIsGenerating(false);
-	// 		clearInterval(interval_id);
-	// 		return;
-	// 	}
-
-	// 	const status_resp = await resp.json();
-	// 	const { isCompleted } = status_resp;
-	// 	if (isCompleted) {
-	// 		const { res, url, err } = status_resp.job;
-	// 		if (err) {
-	// 			console.error(err);
-	// 			setError(err);
-	// 			setIsGenerating(false);
-	// 			return;
-	// 		}
-
-	// 		if (url === "") {
-	// 			setError("Failed to generate image.");
-	// 			return;
-	// 		}
-
-	// 		console.log(res);
-
-	// 		setIsGenerating(false);
-
-	// 		setGeneratedImages([...generated_images, url]);
-	// 		setAllPrompts([...all_prompts, prompt]);
-
-	// 		clearInterval(interval_id);
-	// 	}
-	// }, 5000);
-};
-
 function ModelDetailsSection() {
 	const {
 		model_data,
@@ -248,29 +100,146 @@ function ModelDetailsSection() {
 		setAllPrompts,
 	} = useModels();
 
-	const props = {
-		model_data,
-		setModelData,
-		prompt,
-		setPrompt,
-		setIsGenerating,
-		isGenerating,
-		error,
-		setError,
-		generated_images,
-		setGeneratedImages,
-		all_prompts,
-		setAllPrompts,
-	};
-
 	const promptInputRef = useRef(null);
+	const [token, setToken] = useState<string | null>(null);
+	const [statusUrl, setStatusUrl] = useState<string | null>(null);
+	const [imageFetchToken, setImageFetchToken] = useState<string | null>(null);
+
+	const fetcher = (url: string) =>
+		fetch(url).then((res) => {
+			if (!res.ok) throw new Error("Network error");
+			return res.json();
+		});
+
+	useEffect(() => {
+		if (isGenerating && token) {
+			setStatusUrl(`/api/generate/status?token=${token}`);
+		} else {
+			setStatusUrl(null);
+		}
+	}, [isGenerating, token]);
+
+	const { data, error: swrError } = useSWR(
+		isGenerating ? statusUrl : null,
+		fetcher,
+		{
+			refreshInterval: 20000,
+			revalidateOnFocus: false,
+			dedupingInterval: 5_000,
+		}
+	);
+
+	useEffect(() => {
+		if (!swrError) {
+			return;
+		}
+		setError("Failed to check job status.");
+		setIsGenerating(false);
+	}, [swrError, setError, setIsGenerating]);
+
+	useEffect(() => {
+		if (!data) {
+			return;
+		}
+		if (data.status === "failed") {
+			setError("Image generation failed.");
+			setIsGenerating(false);
+			return;
+		}
+		if (data.status === "completed") {
+			if (!token || imageFetchToken === token) {
+				return;
+			}
+			setImageFetchToken(token);
+			const fetchImage = async () => {
+				const response = await fetch(
+					`/api/generate/get_image?token=${token}`
+				);
+				if (!response.ok) {
+					setError("Failed to fetch generated image.");
+					setIsGenerating(false);
+					return;
+				}
+				const imageData = await response.json();
+				const url = imageData.result?.url || imageData.url;
+				if (!url) {
+					setError("No image URL returned.");
+					setIsGenerating(false);
+					return;
+				}
+				setGeneratedImages([...generated_images, url]);
+				setAllPrompts([...all_prompts, prompt]);
+				setIsGenerating(false);
+			};
+			fetchImage();
+		}
+	}, [
+		data,
+		imageFetchToken,
+		prompt,
+		setError,
+		setIsGenerating,
+		setAllPrompts,
+		setGeneratedImages,
+		token,
+	]);
+
+	const handleGenerate = async () => {
+		const username = localStorage.getItem("username");
+
+		if (!model_data || !username) {
+			setError("Missing model or user.");
+			return;
+		}
+
+		if (prompt.trim() === "") {
+			setError("Please enter a prompt.");
+			return;
+		}
+
+		setError(null);
+		setIsGenerating(true);
+
+		const response = await fetch("/api/generate/generate_image", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				prompt: prompt,
+				model_id: model_data.model_id,
+				username: username,
+			}),
+		});
+
+		if (!response.ok) {
+			setError("Failed to generate image.");
+			setIsGenerating(false);
+			return;
+		}
+
+		const data2 = await response.json();
+		const { status, message } = data2;
+		if (!status) {
+			console.error(message);
+			setError(message);
+			setIsGenerating(false);
+			return;
+		}
+
+		if (!data2.token) {
+			setError("No token received for image generation.");
+			setIsGenerating(false);
+			return;
+		}
+
+		setToken(data2.token);
+	};
 
 	return (
 		<section className="flex flex-col items-start justify-between pt-10 gap-2 w-1/2">
 			<ModelHeading model_name={model_data ? model_data.name : null} />
 			<ModelAuthor
-				author={model_data ? model_data.author : null}
-				model_url={model_data?.model_url}
+				author={model_data ? "civitai" : null}
+				model_url={model_data?.url}
 			/>
 			<BlurFade
 				inView
@@ -311,7 +280,7 @@ function ModelDetailsSection() {
 						) => {
 							e.preventDefault();
 
-							await GenerateImage(props);
+							await handleGenerate();
 						}}
 					/>
 				) : (

@@ -21,20 +21,21 @@ export interface GeneratedImageRecords {
 	download_url?: Url = "";
 }
 
-type IssuerType = "huggingface" | "replicate" | "deepai" | "openai" | "civitai";
-
+type ModelIdType =
+	| "z-turbo-base"
+	| "z-turbo-pixel"
+	| "z-turbo-anime"
+	| "sd-xl"
+	| "sd-xl-anime"
+	| "sd-xl-anime-upscale"
+	| "realvis-xl"
+	| "juggernaut-xl"
+	| "dreamshaper-xl";
 export interface ModelDataType {
-	id: number;
+	model_id: ModelIdType;
 	name: string;
-	author: string;
-	url_name: Url;
+	url: string;
 	description?: string;
 	banner: string;
-	model_url: Url;
-	issuer: IssuerType;
 	trigger_words: string[];
-	nsfw?: boolean = false;
-	needs_loading?: boolean = false;
-	load?: () => Promise<any>;
-	query: (input: string, ...kwargs: any[]) => Promise<any>;
 }

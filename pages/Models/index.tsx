@@ -19,13 +19,13 @@ function Model() {
 						<BlurFade
 							delay={0.1 * ((index % AllModels.length) + 1)}
 							inView
-							key={model.id}
+							key={model.model_id}
 							duration={0.8}
 						>
 							<ModelCard
 								model_name={model.name}
-								model_url_name={model.url_name}
-								author={model.author}
+								model_url_name={model.url}
+								author={"civitai"}
 								image_url={model.banner}
 							/>
 						</BlurFade>

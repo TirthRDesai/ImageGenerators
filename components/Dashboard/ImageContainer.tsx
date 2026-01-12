@@ -23,7 +23,12 @@ function ImageContainer({
 			<figure className="relative w-full aspect-square group/item cursor-pointer">
 				<Image
 					className="object-fit object-center w-full h-full aspect-square rounded-xl "
-					src={item.url.toString()}
+					src={
+						"https://imgenerator.td-server.com/storage/" +
+						item.generated_by +
+						"/" +
+						item.image_name
+					}
 					alt={item.image_name || "image"}
 					width={500}
 					height={500}

@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Ripple from "../ui/ripple";
 import WordRotate from "../ui/word-rotate";
-import { useTheme } from "next-themes";
-import { ModelDataType } from "@/types";
 import Image from "next/image";
 import { useModels } from "@/context/ModelsContext";
 

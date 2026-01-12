@@ -6,6 +6,8 @@ const nextConfig = {
       hostname: "picsum.photos"
     }, {
       hostname: "nbjvaaairgzidrkiwmfc.supabase.co"
+    }, {
+      hostname: "imgenerator.td-server.com"
     }], // Add external image domains here
   },
   compiler: {

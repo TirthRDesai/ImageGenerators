@@ -1,8 +1,10 @@
 import { pageType, useUser } from "@/context/context";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 
 const MenuItemDesign = ({ href, label }: { href: string; label: pageType }) => {
 	const { page, setPage } = useUser();
+	const router = useRouter();
 
 	const [extra, setExtra] = useState(
 		"hover:bg-slate-100 hover:text-black/80"
@@ -31,7 +33,7 @@ const MenuItemDesign = ({ href, label }: { href: string; label: pageType }) => {
 			onClick={() => {
 				if (page !== label) {
 					setPage(label);
-					window.location.href = href;
+					router.push(href);
 				}
 			}}
 		>
@@ -42,11 +44,22 @@ const MenuItemDesign = ({ href, label }: { href: string; label: pageType }) => {
 
 function Navbar() {
 	const { page, setPage } = useUser();
+	const router = useRouter();
 
 	return (
 		<nav className="flex w-full min-h-[80px] rounded-b-lg text-white/85 max-h-md bg-transparent/50 shadow-white/60 shadow-md fixed z-50 backdrop-blur-md">
 			<ul className="flex items-center justify-between px-4 py-3 w-full">
-				<li className="text-xl font-semibold">Website Name</li>
+				<li
+					className="text-xl font-semibold cursor-pointer"
+					onClick={() => {
+						if (page !== "Home") {
+							setPage("Home");
+						}
+						router.push("/Dashboard");
+					}}
+				>
+					IM-G-enerators
+				</li>
 				<li className="flex justify-stretch gap-6 items-stretch">
 					{menuItems.map((item, index) => (
 						<MenuItemDesign

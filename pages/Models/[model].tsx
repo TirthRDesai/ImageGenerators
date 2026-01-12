@@ -21,9 +21,9 @@ function SelectedModel() {
 	useEffect(() => {
 		if (model) {
 			const data = ModelData.find((checker: ModelDataType, index) => {
-				return checker.url_name === model;
+				return checker.url === model;
 			});
-
+			console.log("Fetched model data:", data);
 			if (!data) {
 				router.push("/404");
 			}
