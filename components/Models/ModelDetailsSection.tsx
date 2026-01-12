@@ -142,8 +142,33 @@ function ModelDetailsSection() {
 			return;
 		}
 		if (data.status === "failed") {
-			setError("Image generation failed.");
-			setIsGenerating(false);
+			if (!token || imageFetchToken === token) {
+				setError("Image generation failed.");
+				setIsGenerating(false);
+				return;
+			}
+			setImageFetchToken(token);
+			const fetchImage = async () => {
+				const response = await fetch(
+					`/api/generate/get_image?token=${token}`
+				);
+				if (!response.ok) {
+					setError("Failed to fetch generated image.");
+					setIsGenerating(false);
+					return;
+				}
+				const imageData = await response.json();
+				const url = imageData.result?.url || imageData.url;
+				if (!url) {
+					setError("No image URL returned.");
+					setIsGenerating(false);
+					return;
+				}
+				setGeneratedImages([...generated_images, url]);
+				setAllPrompts([...all_prompts, prompt]);
+				setIsGenerating(false);
+			};
+			fetchImage();
 			return;
 		}
 		if (data.status === "completed") {

@@ -13,76 +13,124 @@ export const ModelData: ModelDataType[] = [
 	{
 		model_id: "z-turbo-base",
 		banner: Banner1.src,
-		description: "Fast and efficient image generation model.",
+		description:
+			"Ultra-fast general-purpose image generation model optimized for speed and prompt responsiveness.",
 		name: "Z-Turbo",
 		url: "z-turbo",
-		trigger_words: [],
+		trigger_words: ["fast", "high speed", "quick render", "low latency"],
 	},
 	{
 		model_id: "z-turbo-pixel",
 		banner: Banner2.src,
-		description: "Pixel art generation with Z-Turbo Pixel.",
+		description:
+			"Specialized model for crisp pixel-art and retro-style game assets with clean edges.",
 		name: "Z-Turbo Pixel",
 		url: "z-turbo-pixel",
-		trigger_words: [],
+		trigger_words: ["pixel art", "8-bit", "16-bit", "retro game", "sprite"],
 	},
 	{
 		model_id: "z-turbo-anime",
 		banner: Banner3.src,
-		description: "Anime-style image generation with Z-Turbo Anime.",
+		description:
+			"Anime-focused fast generation model producing clean line art and vibrant anime aesthetics.",
 		name: "Z-Turbo Anime",
 		url: "z-turbo-anime",
-		trigger_words: [],
+		trigger_words: [
+			"anime",
+			"manga",
+			"anime style",
+			"cel shading",
+			"waifu",
+		],
 	},
 	{
 		model_id: "sd-xl",
 		banner: Banner4.src,
-		description: "High-quality image generation with Stable Diffusion XL.",
+		description:
+			"High-quality, detailed image generation model suitable for realistic and artistic compositions.",
 		name: "Stable Diffusion XL",
 		url: "sd-xl",
-		trigger_words: [],
+		trigger_words: [
+			"photorealistic",
+			"cinematic",
+			"high detail",
+			"ultra realistic",
+		],
 	},
 	{
 		model_id: "sd-xl-anime",
 		banner: Banner5.src,
-		description: "Anime-style image generation with Stable Diffusion XL.",
+		description:
+			"Anime-optimized Stable Diffusion XL model with improved character consistency and style control.",
 		name: "Stable Diffusion XL Anime",
 		url: "sd-xl-anime",
-		trigger_words: [],
+		trigger_words: [
+			"anime character",
+			"anime illustration",
+			"anime portrait",
+			"studio style",
+		],
 	},
 	{
 		model_id: "sd-xl-anime-upscale",
 		banner: Banner6.src,
-		description: "Upscale anime images with Stable Diffusion XL.",
+		description:
+			"Anime image upscaling model designed to enhance resolution while preserving line quality.",
 		name: "Stable Diffusion XL Anime Upscale",
 		url: "sd-xl-anime-upscale",
-		trigger_words: [],
+		trigger_words: [
+			"upscale",
+			"high resolution",
+			"anime upscale",
+			"detail enhancement",
+		],
 	},
 	{
 		model_id: "realvis-xl",
 		banner: Banner7.src,
-		description: "Realistic image generation with RealVis XL.",
+		description:
+			"Realism-focused model producing lifelike portraits, lighting, and photographic detail.",
 		name: "RealVis XL",
 		url: "realvis-xl",
-		trigger_words: [],
+		trigger_words: [
+			"realistic",
+			"photo",
+			"portrait",
+			"natural lighting",
+			"DSLR",
+		],
 	},
 	{
 		model_id: "juggernaut-xl",
 		banner: Banner8.src,
-		description: "Powerful image generation with Juggernaut XL.",
+		description:
+			"Powerful all-rounder model capable of cinematic, fantasy, and high-impact visual styles.",
 		name: "Juggernaut XL",
 		url: "juggernaut-xl",
-		trigger_words: [],
+		trigger_words: [
+			"cinematic",
+			"dramatic lighting",
+			"fantasy",
+			"concept art",
+		],
 	},
 	{
 		model_id: "dreamshaper-xl",
 		banner: Banner9.src,
-		description: "Creative image generation with DreamShaper XL.",
+		description:
+			"Creative-focused model ideal for stylized art, illustrations, and imaginative scenes.",
 		name: "DreamShaper XL",
 		url: "dreamshaper-xl",
-		trigger_words: [],
+		trigger_words: [
+			"stylized",
+			"illustration",
+			"artistic",
+			"dreamlike",
+			"concept design",
+		],
 	},
 ];
+
 
 export function getOnlyModelData() {
 	return ModelData.map((model) => {
