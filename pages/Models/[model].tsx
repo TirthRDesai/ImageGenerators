@@ -34,7 +34,7 @@ function SelectedModel() {
 
 	return (
 		<main className="px-10 w-full h-full pt-[100px]">
-			<section className="flex w-full h-full justify-between items-start">
+			<section className="flex md:flex-row flex-col items-center justify-center w-full h-full md:justify-between md:items-start md:overflow-hidden pb-20 md:pb-0">
 				<ModelDetailsSection />
 				<ImageGenerating />
 			</section>

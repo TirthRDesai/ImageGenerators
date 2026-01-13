@@ -223,7 +223,7 @@ function ModelDetailsSection() {
 	};
 
 	return (
-		<section className="flex flex-col items-start justify-between pt-10 gap-2 w-1/2">
+		<section className="flex flex-col items-start justify-between pt-10 gap-2 w-full md:w-1/2">
 			<ModelHeading model_name={model_data ? model_data.name : null} />
 			<ModelAuthor
 				author={model_data ? "civitai" : null}

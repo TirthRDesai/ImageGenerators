@@ -12,7 +12,7 @@ export default function Document() {
 					href="/favicon.png"
 				/>
 			</Head>
-			<body className="antialiased">
+			<body className="antialiased h-full w-full text-foreground">
 				<Background />
 				<Main />
 				<NextScript />
