@@ -8,7 +8,7 @@ function ImageGenerating() {
 	const { model_data, isGenerating, generated_images, error } = useModels();
 
 	return (
-		<div className="relative flex md:h-[500px] md:w-[500px] h-[400px] w-[400px] flex-col items-center justify-center overflow-hidden rounded-xl border bg-background md:shadow-xl">
+		<div className="relative flex md:h-[500px] md:w-[500px] w-[80vw] aspect-square flex-col items-center justify-center overflow-hidden rounded-xl border bg-background md:shadow-xl">
 			{isGenerating ? (
 				<>
 					<WordRotate
