@@ -141,62 +141,25 @@ function ModelDetailsSection() {
 		if (!data) {
 			return;
 		}
-		if (data.status === "failed") {
-			if (!token || imageFetchToken === token) {
+		if (data.result != null) {
+			if (data.status == "completed" || data.status == "failed") {
+				setIsGenerating(false);
+			}
+			const image_name = data.result.prompt_id;
+			const url =
+				"https://imgenerator.td-server.com/storage/" +
+				data.username +
+				"/" +
+				image_name +
+				".png";
+			if (data.status == "completed" && image_name) {
+				setGeneratedImages([...generated_images, url]);
+				setAllPrompts([...all_prompts, prompt]);
+			} else if (data.status == "failed") {
 				setError("Image generation failed.");
-				setIsGenerating(false);
-				return;
 			}
-			setImageFetchToken(token);
-			const fetchImage = async () => {
-				const response = await fetch(
-					`/api/generate/get_image?token=${token}`
-				);
-				if (!response.ok) {
-					setError("Failed to fetch generated image.");
-					setIsGenerating(false);
-					return;
-				}
-				const imageData = await response.json();
-				const url = imageData.result?.url || imageData.url;
-				if (!url) {
-					setError("No image URL returned.");
-					setIsGenerating(false);
-					return;
-				}
-				setGeneratedImages([...generated_images, url]);
-				setAllPrompts([...all_prompts, prompt]);
-				setIsGenerating(false);
-			};
-			fetchImage();
-			return;
-		}
-		if (data.status === "completed") {
-			if (!token || imageFetchToken === token) {
-				return;
-			}
-			setImageFetchToken(token);
-			const fetchImage = async () => {
-				const response = await fetch(
-					`/api/generate/get_image?token=${token}`
-				);
-				if (!response.ok) {
-					setError("Failed to fetch generated image.");
-					setIsGenerating(false);
-					return;
-				}
-				const imageData = await response.json();
-				const url = imageData.result?.url || imageData.url;
-				if (!url) {
-					setError("No image URL returned.");
-					setIsGenerating(false);
-					return;
-				}
-				setGeneratedImages([...generated_images, url]);
-				setAllPrompts([...all_prompts, prompt]);
-				setIsGenerating(false);
-			};
-			fetchImage();
+			setToken(null);
+			setImageFetchToken(null);
 		}
 	}, [
 		data,
