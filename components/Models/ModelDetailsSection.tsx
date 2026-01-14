@@ -104,12 +104,20 @@ function ModelDetailsSection() {
 
 	useEffect(() => {
 		const username = localStorage.getItem("username");
-		console.log("HERE");
+		if (!username) {
+			window.location.href = "/";
+		}
+		const isLocal =
+			window.location.hostname === "localhost" ||
+			window.location.hostname === "127.0.0.1";
 
-		const ws = new WebSocket(
-			`ws://imgenerator.td-server.com/ws/realtime?username=${username}`
-		);
+		const proto = isLocal ? "ws" : "wss";
+		const host = isLocal ? "localhost:9001" : "imgenerator.td-server.com";
 
+		const wsUrl = `${proto}://${host}/ws/realtime?username=${encodeURIComponent(
+			username || ""
+		)}`;
+		const ws = new WebSocket(wsUrl);
 		ws.onopen = () => console.log("🟢 WS connected");
 
 		ws.onmessage = (e) => {
