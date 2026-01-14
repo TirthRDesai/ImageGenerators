@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/your-org/your-repo/main/assets/banner.png" alt="AI Image Generator Banner" width="100%" />
+  <img src="https://raw.githubusercontent.com/TirthRDesai/ImageGenerators/refs/heads/main/public/Banners/Imgenerator%20Banner.png?token=GHSAT0AAAAAADQDNTY45OAN3OFLM3F7XNZ62LICDVQ" alt="AI Image Generator Banner" width="100%" />
 </p>
 
 <h1 align="center">🖼️ AI Image Generation Platform</h1>
