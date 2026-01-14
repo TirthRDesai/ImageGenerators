@@ -6,7 +6,7 @@ import { useUser } from "@/context/context";
 import Background from "@/components/Dashboard/Background";
 
 function Dashboard() {
-	const { setPage } = useUser();
+	const { setPage, user } = useUser();
 
 	useEffect(() => {
 		setPage("Home");

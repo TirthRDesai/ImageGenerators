@@ -101,76 +101,44 @@ function ModelDetailsSection() {
 	} = useModels();
 
 	const promptInputRef = useRef(null);
-	const [token, setToken] = useState<string | null>(null);
-	const [statusUrl, setStatusUrl] = useState<string | null>(null);
-	const [imageFetchToken, setImageFetchToken] = useState<string | null>(null);
-
-	const fetcher = (url: string) =>
-		fetch(url).then((res) => {
-			if (!res.ok) throw new Error("Network error");
-			return res.json();
-		});
 
 	useEffect(() => {
-		if (isGenerating && token) {
-			setStatusUrl(`/api/generate/status?token=${token}`);
-		} else {
-			setStatusUrl(null);
-		}
-	}, [isGenerating, token]);
+		const username = localStorage.getItem("username");
+		console.log("HERE");
 
-	const { data, error: swrError } = useSWR(
-		isGenerating ? statusUrl : null,
-		fetcher,
-		{
-			refreshInterval: 20000,
-			revalidateOnFocus: false,
-			dedupingInterval: 5_000,
-		}
-	);
+		const ws = new WebSocket(
+			`ws://imgenerator.td-server.com/ws/realtime?username=${username}`
+		);
 
-	useEffect(() => {
-		if (!swrError) {
-			return;
-		}
-		setError("Failed to check job status.");
-		setIsGenerating(false);
-	}, [swrError, setError, setIsGenerating]);
+		ws.onopen = () => console.log("🟢 WS connected");
 
-	useEffect(() => {
-		if (!data) {
-			return;
-		}
-		if (data.result != null) {
-			if (data.status == "completed" || data.status == "failed") {
-				setIsGenerating(false);
+		ws.onmessage = (e) => {
+			const data = JSON.parse(e.data);
+			if (data.type === "generated_image_insert") {
+				const record = data.record;
+				const status = record.status;
+				if (status === "Success") {
+					const image_name = record.image_name;
+					const url =
+						"https://imgenerator.td-server.com/storage/" +
+						username +
+						"/" +
+						image_name;
+					setGeneratedImages([...generated_images, url]);
+					setAllPrompts([...all_prompts, prompt]);
+					setIsGenerating(false);
+				} else if (status === "Failed") {
+					setError("Image generation failed.");
+					setIsGenerating(false);
+				}
 			}
-			const image_name = data.result.prompt_id;
-			const url =
-				"https://imgenerator.td-server.com/storage/" +
-				data.username +
-				"/" +
-				image_name +
-				".png";
-			if (data.status == "completed" && image_name) {
-				setGeneratedImages([...generated_images, url]);
-				setAllPrompts([...all_prompts, prompt]);
-			} else if (data.status == "failed") {
-				setError("Image generation failed.");
-			}
-			setToken(null);
-			setImageFetchToken(null);
-		}
-	}, [
-		data,
-		imageFetchToken,
-		prompt,
-		setError,
-		setIsGenerating,
-		setAllPrompts,
-		setGeneratedImages,
-		token,
-	]);
+		};
+
+		ws.onerror = (e) => console.error("🔴 WS error", e);
+		ws.onclose = () => console.log("⚪ WS closed");
+
+		return () => ws.close();
+	}, []);
 
 	const handleGenerate = async () => {
 		const username = localStorage.getItem("username");
@@ -218,8 +186,6 @@ function ModelDetailsSection() {
 			setIsGenerating(false);
 			return;
 		}
-
-		setToken(data2.token);
 	};
 
 	return (

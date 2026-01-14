@@ -43,6 +43,7 @@ export default async function handler(
 		const url = new URL("/generate/fetch_generated_images/", baseUrl);
 		url.searchParams.set("ffrom", String(from));
 		url.searchParams.set("to", String(to));
+		console.log("url" + url);
 
 		const response = await fetch(url.toString(), {
 			method: "POST",
