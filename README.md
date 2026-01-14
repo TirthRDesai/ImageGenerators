@@ -1,62 +1,101 @@
-# Image Generators (Frontend)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/your-org/your-repo/main/assets/banner.png" alt="AI Image Generator Banner" width="100%" />
+</p>
 
-This repository contains the Next.js frontend for the Image Generators app.
-It provides the user interface for browsing models, composing prompts, launching
-image generation jobs, and viewing results. The backend is not included here and
-must be run separately.
+<h1 align="center">🖼️ AI Image Generation Platform</h1>
 
-The UI is built around a simple workflow: users pick a model, enter a prompt,
-start a generation job, and the app polls for status updates until the image is
-ready. When the job completes, the UI fetches the final image and presents it
-alongside the prompt and metadata. This keeps the frontend responsive while the
-heavy lifting happens elsewhere.
+<p align="center">
+  <strong>A scalable, real-time, self-hosted AI image generation system</strong><br/>
+  FastAPI · Next.js · Stable Diffusion · Cloudflare · GPU-Accelerated
+</p>
 
-Typical use cases include:
-- Rapid exploration of creative prompts with different models
-- Building a lightweight UI on top of an external image generation backend
-- Showing a gallery of generated results for demos or internal teams
-- Frontend-only development while the backend evolves independently
+<p align="center">
+  <a href="#"><img src="https://img.shields.io/badge/status-active-success.svg"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/backend-FastAPI-009688.svg"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/frontend-Next.js-black.svg"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/database-PostgreSQL-336791.svg"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/AI-Stable%20Diffusion-blueviolet.svg"/></a>
+  <a href="#"><img src="https://img.shields.io/badge/license-MIT-green.svg"/></a>
+</p>
 
-## Features
-- Model browsing and details
-- Prompt input and image generation flow
-- Polling job status and fetching generated images via API routes
+---
 
-## Prerequisites
-- Node.js 18+
-- A running backend service (not included in this repo)
+## ✨ Overview
 
-## Setup
-1) Install dependencies:
-```bash
-npm install
-```
+**AI Image Generation Platform** is a production-grade full-stack system that enables users to generate high-quality AI images, receive results in real time, and manage generated assets efficiently.
 
-2) Create `.env.local` and set any keys you use (see `.env.example`).
-At minimum, if your backend is not at `http://127.0.0.1:9001`, set:
-```
-NEXT_PUBLIC_BACKEND_URL=http://127.0.0.1:9001
-```
+Designed for:
+- 🔥 Local GPU servers  
+- ☁️ Cloudflare tunnel deployments  
+- ⚡ Real-time WebSocket updates  
+- 🧠 Modern diffusion pipelines  
 
-3) Run the dev server:
-```bash
-npm run dev
-```
+This is **not a demo**—it’s an infrastructure-ready platform.
 
-Open http://localhost:3000
+---
 
-## Backend note
-This repo does not include the backend API.
-The frontend expects backend routes such as:
-- `/generate/image`
-- `/generate/get_status/{token}`
-- `/generate/get_image/{token}`
-- `/generate/fetch_generated_images/`
+## 🚀 Key Features
 
-If those endpoints live elsewhere, update your backend URL in `.env.local`.
+### 🎨 Image Generation
+- Text-to-Image via Stable Diffusion / SDXL
+- Prompt & negative prompt support
+- Seed, CFG, steps, sampler control
+- High-resolution outputs
+- Custom models & LoRA support
 
-## Scripts
-- `npm run dev` - start dev server
-- `npm run build` - production build
-- `npm run start` - start production server
-- `npm run lint` - lint
+### ⚡ Real-Time Updates
+- WebSocket-based live feed
+- Images appear instantly after generation
+- No refresh, no polling
+- Scalable room-based socket design
+
+### 🧠 Backend (FastAPI)
+- Fully async FastAPI backend
+- Background image generation tasks
+- PostgreSQL for metadata & logs
+- Clean service-layer architecture
+- CORS & auth-ready
+
+### 🎨 Frontend (Next.js)
+- App Router architecture
+- Smooth UI animations
+- Progressive image loading (blur-in)
+- Responsive & performance-optimized
+
+### ☁️ Infrastructure Ready
+- Local gateway → public domain routing
+- Cloudflare Tunnel (HTTPS + WSS)
+- Docker-optional (runs natively)
+- Reverse-proxy compatible
+
+---
+
+## 🏗️ System Architecture
+
+```text
+┌──────────────┐
+│   Browser    │
+│ (Next.js UI) │
+└──────┬───────┘
+       │ HTTPS / WSS
+       ▼
+┌────────────────────┐
+│ Cloudflare Tunnel  │
+└──────┬─────────────┘
+       ▼
+┌────────────────────┐
+│ FastAPI Backend    │
+│  • REST API        │
+│  • WebSockets      │
+│  • Background Jobs │
+└──────┬─────────────┘
+       ▼
+┌────────────────────┐
+│ GPU Image Engine   │
+│ Stable Diffusion   │
+└──────┬─────────────┘
+       ▼
+┌────────────────────┐
+│ PostgreSQL DB      │
+│ Image Metadata     │
+└────────────────────┘
