@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CheckForNavbar from "@/components/CheckForNavbar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModelsContextProvider } from "@/context/ModelsContext";
+import { Toaster } from "@/components/ui/sonner";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ export default function App({ Component, pageProps }: AppProps) {
 					<QueryClientProvider client={queryClient}>
 						<CheckForNavbar />
 						<Component {...pageProps} />
+						<Toaster />
 					</QueryClientProvider>
 				</ModelsContextProvider>
 			</ContextProvider>

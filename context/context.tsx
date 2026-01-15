@@ -1,6 +1,13 @@
-import { useToast } from "@/hooks/use-toast";
 import { Users } from "@/types";
-import { createContext, useState, ReactNode, useContext } from "react";
+import { toast } from "sonner";
+import {
+	createContext,
+	useState,
+	ReactNode,
+	useContext,
+	useEffect,
+	useRef,
+} from "react";
 
 export type pageType =
 	| "login"
@@ -31,19 +38,68 @@ interface ContextType {
 
 const context = createContext<ContextType | undefined>(undefined);
 
+let hasCheckedHealthOnce = false;
+const HEALTH_RECHECK_MS = 5 * 60 * 1000;
+
 export const ContextProvider: React.FC<{ children: ReactNode }> = ({
 	children,
 }) => {
 	const [user, setUser] = useState<Users | null>(null);
 	const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+	const [serverHealth, setServerHealth] = useState<boolean>(true);
+	const previousServerHealth = useRef(serverHealth);
 
-	const { toast } = useToast();
+	const updateServerHealth = (nextHealth: boolean) => {
+		if (previousServerHealth.current && !nextHealth) {
+			toast.error(
+				"Backend service is down. We have notified the admins. Please try again later.",
+				{ duration: 8000, position: "bottom-right" }
+			);
+		}
+		previousServerHealth.current = nextHealth;
+		setServerHealth(nextHealth);
+	};
+
+	const checkServerHealth = async () => {
+		let didCancel = false;
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+		try {
+			const response = await fetch("/api/proxy/health", {
+				cache: "no-store",
+				signal: controller.signal,
+			});
+			if (didCancel) return false;
+			const isHealthy = response.ok;
+			updateServerHealth(isHealthy);
+			return isHealthy;
+		} catch {
+			if (didCancel) return false;
+			updateServerHealth(false);
+			return false;
+		} finally {
+			clearTimeout(timeoutId);
+		}
+	};
+
+	useEffect(() => {
+		if (hasCheckedHealthOnce) return;
+		hasCheckedHealthOnce = true;
+		checkServerHealth();
+	}, []);
+
+	
 
 	const login = async (
 		username: string,
 		password: string,
 		is_encrypted: boolean = false
 	) => {
+		if (!username || !password) return false;
+		const isHealthy = await checkServerHealth();
+		if (!isHealthy) return false;
+
 		const response = await fetch("/api/users/login", {
 			method: "POST",
 			body: JSON.stringify({ username, password, is_encrypted }),
@@ -53,11 +109,7 @@ export const ContextProvider: React.FC<{ children: ReactNode }> = ({
 		});
 
 		if (response.status != 200) {
-			toast({
-				title: "Error",
-				description: "Invalid username or password",
-				duration: 5000,
-			});
+			toast.error("Invalid username or password", { duration: 5000 });
 			setUser(null);
 			setIsLoggedIn(false);
 			return false;
@@ -76,11 +128,7 @@ export const ContextProvider: React.FC<{ children: ReactNode }> = ({
 		localStorage.setItem("email", data.email);
 		localStorage.setItem("password", data.password);
 
-		toast({
-			title: "Success",
-			description: "Logged in successfully",
-			duration: 5000,
-		});
+		toast.success("Logged in successfully", { duration: 5000 });
 
 		setIsLoggedIn(true);
 		return true;
@@ -94,11 +142,7 @@ export const ContextProvider: React.FC<{ children: ReactNode }> = ({
 
 		setIsLoggedIn(false);
 
-		toast({
-			title: "Success",
-			description: "Logged out successfully",
-			duration: 5000,
-		});
+		toast.success("Logged out successfully", { duration: 5000 });
 		window.location.href = "/";
 	};
 
@@ -108,6 +152,10 @@ export const ContextProvider: React.FC<{ children: ReactNode }> = ({
 		username: string,
 		password: string
 	) => {
+		if (!name || !email || !username || !password) return false;
+		const isHealthy = await checkServerHealth();
+		if (!isHealthy) return false;
+
 		const response = await fetch("/api/users/signup", {
 			method: "POST",
 			body: JSON.stringify({ name, email, username, password }),
@@ -117,11 +165,7 @@ export const ContextProvider: React.FC<{ children: ReactNode }> = ({
 		});
 
 		if (response.status != 200) {
-			toast({
-				title: "Error",
-				description: "Failed to create account",
-				duration: 5000,
-			});
+			toast.error("Failed to create account", { duration: 5000 });
 			setUser(null);
 			setIsLoggedIn(false);
 			return false;
@@ -143,11 +187,7 @@ export const ContextProvider: React.FC<{ children: ReactNode }> = ({
 
 		setIsLoggedIn(true);
 
-		toast({
-			title: "Success",
-			description: "Account created successfully",
-			duration: 5000,
-		});
+		toast.success("Account created successfully", { duration: 5000 });
 		return true;
 	};
 
