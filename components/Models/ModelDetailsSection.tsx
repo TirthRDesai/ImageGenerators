@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Open_Sans, Raleway } from "@next/font/google";
+import { Open_Sans, Raleway } from "next/font/google";
 import BlurFade from "../ui/blur-fade";
 import { Url } from "next/dist/shared/lib/router/router";
 import { Textarea } from "@headlessui/react";

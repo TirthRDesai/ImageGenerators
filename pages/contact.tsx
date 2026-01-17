@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Open_Sans, Raleway } from "@next/font/google";
+import { Open_Sans, Raleway } from "next/font/google";
 import Background from "@/components/Dashboard/Background";
 import BlurFade from "@/components/ui/blur-fade";
 import { Label } from "@/components/ui/label";
