@@ -9,6 +9,10 @@ export default function Document() {
 					rel="icon"
 					href="/favicon.png"
 				/>
+				<meta
+					name="viewport"
+					content="width=device-width, initial-scale=1"
+				/>
 			</Head>
 			<body className="antialiased h-full w-full text-foreground">
 				<Background />
