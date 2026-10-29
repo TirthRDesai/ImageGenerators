@@ -1,44 +1,68 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { backendMessage, gatewayFetch, TOKEN_PATTERN } from "@/utils/gateway";
+import { getAuthedUser } from "@/utils/serverAuth";
 
+/**
+ * Returns { status: "queued" | "running" | "completed" | "failed", error } for the signed-in user's own job.
+ * Only these fields are passed on: the backend's job record also contains server file paths.
+ */
 export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse
 ) {
-	// GET TOKEN
-	const tokenFromQuery = req.query.token;
-	const tokenFromBody = req.body?.token;
-	const token =
-		typeof tokenFromQuery === "string" ? tokenFromQuery : tokenFromBody;
-
 	if (req.method !== "GET" && req.method !== "POST") {
 		return res
 			.status(405)
 			.json({ message: "Method not allowed", status: false });
 	}
 
-	if (!token || typeof token !== "string") {
+	const tokenFromQuery = req.query.token;
+	const tokenFromBody = req.body?.token;
+	const token =
+		typeof tokenFromQuery === "string" ? tokenFromQuery : tokenFromBody;
+
+	if (typeof token !== "string" || !TOKEN_PATTERN.test(token)) {
 		return res
 			.status(400)
-			.json({ message: "Token is required", status: false });
+			.json({ message: "A valid token is required", status: false });
 	}
 
-	// CHECK STATUS
+	res.setHeader("Cache-Control", "no-store");
+	try {
+		const user = await getAuthedUser(req);
+		if (!user) {
+			return res
+				.status(401)
+				.json({ message: "Please sign in", status: false });
+		}
 
-	const url =
-		"https://imgenerator.td-server.com/generate/get_status/" + token;
-	const response = await fetch(url, { method: "GET" });
-	if (!response.ok) {
+		const response = await gatewayFetch(
+			"/api/status/" + encodeURIComponent(token)
+		);
+		if (!response.ok) {
+			return res.status(response.status).json({
+				status: false,
+				message: await backendMessage(
+					response,
+					"Failed to fetch status"
+				),
+			});
+		}
+
+		const job = await response.json();
+		if (job.username !== user.username) {
+			return res
+				.status(404)
+				.json({ status: false, message: "Job not found" });
+		}
+		return res.status(200).json({
+			status: job.status,
+			error: job.error ?? null,
+		});
+	} catch (error) {
+		console.error("status failed", error);
 		return res
-			.status(500)
-			.json({ message: "Failed to fetch status", status: false });
+			.status(502)
+			.json({ status: false, message: "Image backend is unavailable" });
 	}
-
-	const data = await response.json();
-	console.log(data);
-	if (!data.status) {
-		return res
-			.status(500)
-			.json({ message: "Failed to get status", status: false });
-	}
-	return res.status(200).json(data.data);
 }

@@ -8,6 +8,8 @@ import {
 	useEffect,
 	useRef,
 } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "@/utils/supabase";
 
 export type pageType =
 	| "login"
@@ -20,15 +22,14 @@ export type pageType =
 interface ContextType {
 	user: Users | null;
 	isLoggedIn: boolean;
-	login: (
-		username: string,
-		password: string,
-		is_encrypted: boolean
-	) => Promise<boolean>;
+	/** False until the stored session (if any) has been checked. */
+	authReady: boolean;
+	/** `username` may also be an email address. */
+	login: (username: string, password: string) => Promise<boolean>;
 	signup: (
 		name: string,
-		username: string,
 		email: string,
+		username: string,
 		password: string
 	) => Promise<boolean>;
 	logout: () => void;
@@ -39,13 +40,13 @@ interface ContextType {
 const context = createContext<ContextType | undefined>(undefined);
 
 let hasCheckedHealthOnce = false;
-const HEALTH_RECHECK_MS = 5 * 60 * 1000;
 
 export const ContextProvider: React.FC<{ children: ReactNode }> = ({
 	children,
 }) => {
 	const [user, setUser] = useState<Users | null>(null);
 	const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+	const [authReady, setAuthReady] = useState<boolean>(false);
 	const [serverHealth, setServerHealth] = useState<boolean>(true);
 	const previousServerHealth = useRef(serverHealth);
 
@@ -89,57 +90,89 @@ export const ContextProvider: React.FC<{ children: ReactNode }> = ({
 		checkServerHealth();
 	}, []);
 
-	
+	// The Supabase session is the single source of truth for who is signed in.
+	useEffect(() => {
+		let active = true;
 
-	const login = async (
-		username: string,
-		password: string,
-		is_encrypted: boolean = false
-	) => {
+		const applySession = async (session: Session | null) => {
+			if (!session) {
+				if (!active) return;
+				setUser(null);
+				setIsLoggedIn(false);
+				setAuthReady(true);
+				return;
+			}
+			const { data } = await supabase
+				.from("profiles")
+				.select("id, username, name")
+				.eq("id", session.user.id)
+				.maybeSingle();
+			if (!active) return;
+			if (data) {
+				setUser({
+					id: data.id,
+					username: data.username,
+					name: data.name,
+					email: session.user.email ?? "",
+				});
+				setIsLoggedIn(true);
+			} else {
+				setUser(null);
+				setIsLoggedIn(false);
+			}
+			setAuthReady(true);
+		};
+
+		supabase.auth.getSession().then(({ data }) => applySession(data.session));
+		const { data: listener } = supabase.auth.onAuthStateChange(
+			(_event, session) => {
+				// Deferred: calling Supabase from inside this callback can deadlock the client.
+				setTimeout(() => void applySession(session), 0);
+			}
+		);
+
+		return () => {
+			active = false;
+			listener.subscription.unsubscribe();
+		};
+	}, []);
+
+	const login = async (username: string, password: string) => {
 		if (!username || !password) return false;
-		const isHealthy = await checkServerHealth();
-		if (!isHealthy) return false;
 
 		const response = await fetch("/api/users/login", {
 			method: "POST",
-			body: JSON.stringify({ username, password, is_encrypted }),
+			body: JSON.stringify({ username, password }),
 			headers: {
 				"Content-Type": "application/json",
 			},
 		});
 
-		if (response.status != 200) {
-			toast.error("Invalid username or password", { duration: 5000 });
-			setUser(null);
-			setIsLoggedIn(false);
+		if (!response.ok) {
+			toast.error(
+				response.status === 401
+					? "Invalid username or password"
+					: "Login is unavailable right now. Please try again.",
+				{ duration: 5000 }
+			);
 			return false;
 		}
 
-		const {
-			message,
-			data,
-		}: {
-			message: string;
-			data: Users;
-		} = await response.json();
-		setUser(data);
-
-		localStorage.setItem("username", data.username);
-		localStorage.setItem("email", data.email);
-		localStorage.setItem("password", data.password);
+		const { session }: { session: { access_token: string; refresh_token: string } } =
+			await response.json();
+		const { error } = await supabase.auth.setSession(session);
+		if (error) {
+			toast.error("Could not start your session", { duration: 5000 });
+			return false;
+		}
 
 		toast.success("Logged in successfully", { duration: 5000 });
-
-		setIsLoggedIn(true);
 		return true;
 	};
 
-	const logout = () => {
+	const logout = async () => {
+		await supabase.auth.signOut();
 		setUser(null);
-		localStorage.removeItem("username");
-		localStorage.removeItem("email");
-		localStorage.removeItem("password");
-
 		setIsLoggedIn(false);
 
 		toast.success("Logged out successfully", { duration: 5000 });
@@ -153,8 +186,6 @@ export const ContextProvider: React.FC<{ children: ReactNode }> = ({
 		password: string
 	) => {
 		if (!name || !email || !username || !password) return false;
-		const isHealthy = await checkServerHealth();
-		if (!isHealthy) return false;
 
 		const response = await fetch("/api/users/signup", {
 			method: "POST",
@@ -164,38 +195,33 @@ export const ContextProvider: React.FC<{ children: ReactNode }> = ({
 			},
 		});
 
-		if (response.status != 200) {
-			toast.error("Failed to create account", { duration: 5000 });
-			setUser(null);
-			setIsLoggedIn(false);
+		if (!response.ok) {
+			const body = await response.json().catch(() => null);
+			toast.error(body?.message ?? "Failed to create account", {
+				duration: 5000,
+			});
 			return false;
 		}
 
-		const {
-			message,
-			data,
-		}: {
-			message: string;
-			data: Users;
-		} = await response.json();
-
-		setUser(data);
-
-		localStorage.setItem("username", data.username);
-		localStorage.setItem("email", data.email);
-		localStorage.setItem("password", data.password);
-
-		setIsLoggedIn(true);
-
 		toast.success("Account created successfully", { duration: 5000 });
-		return true;
+		// Sign in right away with the credentials just used.
+		return login(email, password);
 	};
 
 	const [page, setPage] = useState<pageType>("login");
 
 	return (
 		<context.Provider
-			value={{ user, isLoggedIn, login, logout, signup, page, setPage }}
+			value={{
+				user,
+				isLoggedIn,
+				authReady,
+				login,
+				logout,
+				signup,
+				page,
+				setPage,
+			}}
 		>
 			{children}
 		</context.Provider>

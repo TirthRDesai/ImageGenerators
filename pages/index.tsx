@@ -8,19 +8,13 @@ import { useUser } from "@/context/context";
 import { useEffect, useState } from "react";
 
 export default function Home() {
-	let { user, isLoggedIn, login, logout, page, setPage } = useUser();
+	let { isLoggedIn } = useUser();
 
 	const [action, setAction] = useState("login");
 
+	// A stored Supabase session signs the user in automatically; once signed in, go to the dashboard.
 	useEffect(() => {
-		if (!isLoggedIn) {
-			const email = localStorage.getItem("email");
-			const password = localStorage.getItem("password");
-			const username = localStorage.getItem("username");
-			if (email && username && password) {
-				login(username, password, true);
-			}
-		} else {
+		if (isLoggedIn) {
 			window.location.href = "/Dashboard";
 		}
 	}, [isLoggedIn]);

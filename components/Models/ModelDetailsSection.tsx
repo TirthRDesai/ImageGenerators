@@ -7,6 +7,7 @@ import { Label } from "../ui/label";
 import { Button } from "../ui/button";
 import { useModels } from "@/context/ModelsContext";
 import { useUser } from "@/context/context";
+import { authFetch } from "@/utils/authFetch";
 import GenerateImageFunction from "./GenerateImageFunction";
 import useSWR from "swr";
 
@@ -99,59 +100,101 @@ function ModelDetailsSection() {
 		all_prompts,
 		setAllPrompts,
 	} = useModels();
+	const { isLoggedIn, authReady } = useUser();
 
 	const promptInputRef = useRef(null);
 
+	// Always-current copies for the polling loop, which outlives the render it started in.
+	const imagesRef = useRef(generated_images);
+	imagesRef.current = generated_images;
+	const promptsRef = useRef(all_prompts);
+	promptsRef.current = all_prompts;
+	const mountedRef = useRef(true);
+
 	useEffect(() => {
-		const username = localStorage.getItem("username");
-		if (!username) {
-			window.location.href = "/";
-		}
-		const isLocal =
-			window.location.hostname === "localhost" ||
-			window.location.hostname === "127.0.0.1";
-
-		const proto = isLocal ? "ws" : "wss";
-		const host = isLocal ? "localhost:9001" : "imgenerator.td-server.com";
-
-		const wsUrl = `${proto}://${host}/ws/realtime?username=${encodeURIComponent(
-			username || ""
-		)}`;
-		const ws = new WebSocket(wsUrl);
-		ws.onopen = () => console.log("🟢 WS connected");
-
-		ws.onmessage = (e) => {
-			const data = JSON.parse(e.data);
-			if (data.type === "generated_image_insert") {
-				const record = data.record;
-				const status = record.status;
-				if (status === "Success") {
-					const image_name = record.image_name;
-					const url =
-						"https://imgenerator.td-server.com/storage/" +
-						username +
-						"/" +
-						image_name;
-					setGeneratedImages([...generated_images, url]);
-					setAllPrompts([...all_prompts, prompt]);
-					setIsGenerating(false);
-				} else if (status === "Failed") {
-					setError("Image generation failed.");
-					setIsGenerating(false);
-				}
-			}
+		mountedRef.current = true;
+		return () => {
+			mountedRef.current = false;
 		};
-
-		ws.onerror = (e) => console.error("🔴 WS error", e);
-		ws.onclose = () => console.log("⚪ WS closed");
-
-		return () => ws.close();
 	}, []);
 
-	const handleGenerate = async () => {
-		const username = localStorage.getItem("username");
+	// Signed-out visitors go back to the login page, once the stored session has been checked.
+	useEffect(() => {
+		if (authReady && !isLoggedIn) {
+			window.location.href = "/";
+		}
+	}, [authReady, isLoggedIn]);
 
-		if (!model_data || !username) {
+	// Copies the finished image into the gallery (Supabase) and returns its public URL.
+	const saveImage = async (token: string): Promise<string | null> => {
+		for (let attempt = 0; attempt < 3; attempt++) {
+			try {
+				const saved = await authFetch("/api/generate/finalize", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ token }),
+				});
+				if (saved.ok) {
+					const result = await saved.json();
+					if (typeof result.url === "string") return result.url;
+				}
+			} catch {
+				// retry below
+			}
+			await new Promise((resolve) => setTimeout(resolve, 1500));
+		}
+		return null;
+	};
+
+	// The backend runs a job queue: poll the job status, then load the finished image.
+	const pollJob = async (token: string, submittedPrompt: string) => {
+		const deadline = Date.now() + 15 * 60_000;
+		let failures = 0;
+		while (mountedRef.current && Date.now() < deadline) {
+			await new Promise((resolve) => setTimeout(resolve, 2000));
+			if (!mountedRef.current) return;
+			try {
+				const res = await authFetch(
+					"/api/generate/status?token=" + encodeURIComponent(token)
+				);
+				if (!res.ok) throw new Error("status " + res.status);
+				const job = await res.json();
+				failures = 0;
+				if (job.status === "completed") {
+					const url = await saveImage(token);
+					if (!mountedRef.current) return;
+					if (!url) {
+						setError("The image was generated but could not be saved.");
+						setIsGenerating(false);
+						return;
+					}
+					setGeneratedImages([...imagesRef.current, url]);
+					setAllPrompts([...promptsRef.current, submittedPrompt]);
+					setIsGenerating(false);
+					return;
+				}
+				if (job.status === "failed") {
+					setError("Image generation failed.");
+					setIsGenerating(false);
+					return;
+				}
+			} catch (e) {
+				// One failed poll is fine (network blip); give up after several in a row.
+				if (++failures >= 5) {
+					setError("Lost connection while generating the image.");
+					setIsGenerating(false);
+					return;
+				}
+			}
+		}
+		if (mountedRef.current) {
+			setError("Image generation timed out.");
+			setIsGenerating(false);
+		}
+	};
+
+	const handleGenerate = async () => {
+		if (!model_data || !isLoggedIn) {
 			setError("Missing model or user.");
 			return;
 		}
@@ -164,13 +207,13 @@ function ModelDetailsSection() {
 		setError(null);
 		setIsGenerating(true);
 
-		const response = await fetch("/api/generate/generate_image", {
+		// The server takes the username from the signed-in session.
+		const response = await authFetch("/api/generate/generate_image", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
 				prompt: prompt,
 				model_id: model_data.model_id,
-				username: username,
 			}),
 		});
 
@@ -194,6 +237,8 @@ function ModelDetailsSection() {
 			setIsGenerating(false);
 			return;
 		}
+
+		await pollJob(data2.token, prompt);
 	};
 
 	return (

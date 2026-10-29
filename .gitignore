@@ -39,3 +39,5 @@ next-env.d.ts
 .vscode
 /backend
 package-lock.json
+.env*
+!.env.example

@@ -79,7 +79,9 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ action, setAction }) => {
 						id="username"
 						className="w-full"
 						name="username"
-						placeholder="Username"
+						autoComplete="username"
+						autoCapitalize="none"
+						placeholder="Username (a-z, 0-9, _)"
 						value={username}
 						onChange={(e) => setUsername(e.target.value)}
 					/>
@@ -92,7 +94,8 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ action, setAction }) => {
 						id="password"
 						name="password"
 						className="w-full"
-						placeholder="Password"
+						autoComplete="new-password"
+						placeholder="Password (at least 8 characters)"
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 					/>

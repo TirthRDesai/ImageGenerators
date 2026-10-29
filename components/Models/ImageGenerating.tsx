@@ -30,6 +30,7 @@ function ImageGenerating() {
 						src={generated_images[generated_images.length - 1]}
 						width={500}
 						alt="generated_image"
+						unoptimized
 						height={500}
 					/>
 				</>

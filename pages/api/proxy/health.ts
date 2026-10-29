@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { NextApiRequest, NextApiResponse } from "next";
+import { gatewayFetch } from "@/utils/gateway";
 
 type Response = {
 	message: string;
@@ -28,19 +28,8 @@ export default async function handler(
 	req: NextApiRequest,
 	res: NextApiResponse<Response>
 ) {
-	const base = process.env.BACKEND_URL;
-	if (!base) {
-		return NextResponse.json(
-			{ error: "FASTAPI_BASE_URL not set" },
-			{ status: 500 }
-		);
-	}
-
-	const url = new URL(base);
 	try {
-		const response = await fetch(url.toString(), {
-			method: "GET",
-		});
+		const response = await gatewayFetch("/health", { method: "GET" });
 
 		if (!response.ok) {
 			const now = Date.now();

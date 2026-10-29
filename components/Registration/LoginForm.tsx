@@ -17,7 +17,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ action, setAction }) => {
 	const [password, setPassword] = useState("");
 
 	const loginUser = async () => {
-		await login(username, password, false);
+		await login(username, password);
 		setPassword("");
 		setUsername("");
 		setAction("login");
@@ -44,13 +44,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ action, setAction }) => {
 				</span>
 
 				<div className="grid w-full items-center gap-1.5 text-white">
-					<Label htmlFor="username">Username</Label>
+					<Label htmlFor="username">Username or email</Label>
 					<Input
 						type="text"
 						id="username"
 						className="w-full"
 						name="username"
-						placeholder="Username"
+						autoComplete="username"
+						autoCapitalize="none"
+						placeholder="Username or email"
 						value={username}
 						onChange={(e) => setUsername(e.target.value)}
 					/>
